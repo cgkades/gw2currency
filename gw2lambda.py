@@ -57,6 +57,8 @@ def get_gw2_gems_to_gold(gems):
 
 
 def lambda_handler(event, context):
+    global TIME
+    TIME = datetime.utcnow()
     for dimension in G2C:
         data = get_gw2_gems_to_gold(dimension)
         response = post_cloudwatch_data('coins per gem', "Gems", str(dimension), data)
