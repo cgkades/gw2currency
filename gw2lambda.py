@@ -13,12 +13,12 @@ BASE_URL = "https://api.guildwars2.com/v2/"
 GEMS_TO_COINS = "commerce/exchange/gems?quantity="
 COINS_TO_GEMS = "commerce/exchange/coins?quantity="
 client = boto3.client('cloudwatch')
-TIME = datetime.now()
-G2C = [10, 50, 100, 500, 1000]
-C2G = [1000000, 500000, 1000000, 5000000, 10000000]
+TIME = datetime.utcnow()
+G2C = [100]
+C2G = [1000000]
 
 def post_cloudwatch_data(metric, dimension_name, dimension_value, data):
-    namespace = "gw2Currency"
+    namespace = "GW2/Currency"
     metric_data = [{
         'MetricName': metric,
         'Dimensions': [
@@ -28,7 +28,14 @@ def post_cloudwatch_data(metric, dimension_name, dimension_value, data):
         }
         ],
         'Timestamp': TIME,
+        'Unit': 'Count',
         'Value': data
+        #"StatisticValues": {
+        #    "SampleCount": float(data),
+        #    "Sum": float(data),
+        #    "Minimum": float(data),
+        #    "Maximum": float(data)
+        #}
     }]
     response = client.put_metric_data(Namespace=namespace, MetricData=metric_data)
     return response
@@ -51,11 +58,17 @@ def get_gw2_gems_to_gold(gems):
 
 def lambda_handler(event, context):
     for dimension in G2C:
-        response = post_cloudwatch_data('coins_gems_to_coins', "Coins", dimension, get_gw2_gems_to_gold(dimension))
-        print(response)
+        data = get_gw2_gems_to_gold(dimension)
+        response = post_cloudwatch_data('coins per gem', "Gems", str(dimension), data)
+        print("gems to coins, %s: %s" % (dimension, str(data)))
+        print(str(TIME))
+        #print(response)
     for dimension in C2G:
-        response = post_cloudwatch_data('coins_coins_to_gems', "Coins", dimension, get_gw2_gold_to_gems(dimension))
-        print(response)
+        data = get_gw2_gold_to_gems(dimension)
+        response = post_cloudwatch_data('coins per gem', "Coins", str(dimension), data)
+        print("coins to gems, %s: %s" % (dimension, str(data)))
+        print(str(TIME))
+        #print(response)
 
 if __name__ == "__main__":
     lambda_handler(1,2)
